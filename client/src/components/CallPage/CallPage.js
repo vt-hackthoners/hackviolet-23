@@ -15,6 +15,7 @@ import Alert from "../UI/Alert/Alert";
 import MeetingInfo from "../UI/MeetingInfo/MeetingInfo";
 import CallPageFooter from "../UI/CallPageFooter/CallPageFooter";
 import CallPageHeader from "../UI/CallPageHeader/CallPageHeader";
+import * as Tone from "tone";
 
 let peer = null;
 const socket = io.connect(process.env.REACT_APP_BASE_URL);
@@ -58,89 +59,121 @@ const CallPage = () => {
       peer.signal(response.code);
     }
   };
+  let initWebRTC;
+  try {
+    initWebRTC = () => {
+      navigator.mediaDevices
+        .getUserMedia({
+          video: true,
+          // audio: true,
+        })
+        .then((stream) => {
+          setStreamObj(stream);
+          console.log("Got MediaStream:", stream);
 
-  const initWebRTC = () => {
-    navigator.mediaDevices
-      .getUserMedia({
-        video: true,
-        audio: true,
-      })
-      .then((stream) => {
-        setStreamObj(stream);
-        console.log("Got MediaStream:", stream);
+          const mic = new Tone.UserMedia();
+          mic
+            .open()
+            .then(() => {
+              // promise resolves when input is available
+              console.log("mic open");
+              // print the incoming mic levels in decibels
+              // setInterval(() => console.log(meter.getValue()), 100);
 
-        peer = new Peer({
-          initiator: isAdmin,
-          trickle: false,
-          stream: stream,
-        });
+              const pitchShift = new Tone.PitchShift();
 
-        if (!isAdmin) {
-          getRecieverCode();
-        }
+              mic.connect(pitchShift);
+              pitchShift.toDestination();
+              pitchShift.pitch -= 3;
 
-        peer.on("signal", async (data) => {
-          if (isAdmin) {
-            let payload = {
-              id,
-              signalData: data,
-            };
-            await postRequest(`${BASE_URL}${SAVE_CALL_ID}`, payload);
-          } else {
-            socket.emit("code", { code: data, url }, (cbData) => {
-              console.log("code sent");
+              let dest = pitchShift.context.createMediaStreamDestination();
+              let micstream = dest.stream;
+
+              let audioTrack = micstream.getAudioTracks()[0];
+              stream.addTrack(audioTrack);
+
+              console.log(stream);
+            })
+            .catch((e) => {
+              // promise is rejected when the user doesn't have or allow mic access
+              console.log("mic not open");
             });
+
+          peer = new Peer({
+            initiator: isAdmin,
+            trickle: false,
+            stream: stream,
+          });
+
+          if (!isAdmin) {
+            getRecieverCode();
           }
-        });
 
-        peer.on("connect", () => {
-          // wait for 'connect' event before using the data channel
-        });
-
-        peer.on("data", (data) => {
-          clearTimeout(alertTimeout);
-          messageListReducer({
-            type: "addMessage",
-            payload: {
-              user: "other",
-              msg: data.toString(),
-              time: Date.now(),
-            },
+          peer.on("signal", async (data) => {
+            if (isAdmin) {
+              let payload = {
+                id,
+                signalData: data,
+              };
+              await postRequest(`${BASE_URL}${SAVE_CALL_ID}`, payload);
+            } else {
+              socket.emit("code", { code: data, url }, (cbData) => {
+                console.log("code sent");
+              });
+            }
           });
 
-          setMessageAlert({
-            alert: true,
-            isPopup: true,
-            payload: {
-              user: "other",
-              msg: data.toString(),
-            },
+          peer.on("connect", () => {
+            // wait for 'connect' event before using the data channel
           });
 
-          alertTimeout = setTimeout(() => {
+          peer.on("data", (data) => {
+            clearTimeout(alertTimeout);
+            messageListReducer({
+              type: "addMessage",
+              payload: {
+                user: "other",
+                msg: data.toString(),
+                time: Date.now(),
+              },
+            });
+
             setMessageAlert({
-              ...messageAlert,
-              isPopup: false,
-              payload: {},
+              alert: true,
+              isPopup: true,
+              payload: {
+                user: "other",
+                msg: data.toString(),
+              },
             });
-          }, 10000);
-        });
 
-        peer.on("stream", (stream) => {
-          // got remote video stream, now let's show it in a video tag
-          let video = document.querySelector("video");
+            alertTimeout = setTimeout(() => {
+              setMessageAlert({
+                ...messageAlert,
+                isPopup: false,
+                payload: {},
+              });
+            }, 10000);
+          });
 
-          if ("srcObject" in video) {
-            video.srcObject = stream;
-          } else {
-            video.src = window.URL.createObjectURL(stream); // for older browsers
-          }
+          peer.on("stream", (stream) => {
+            // got remote video stream, now let's show it in a video tag
+            let video = document.querySelector("video");
 
-          video.play();
-        });
-      })
-      .catch(() => {});
-  };
+            if ("srcObject" in video) {
+              video.srcObject = stream;
+            } else {
+              video.src = window.URL.createObjectURL(stream); // for older browsers
+            }
+
+            video.play();
+          });
+        })
+        .catch(() => {});
+    };
+  } catch (err) {
+    console.log(err);
+  }
 
   const sendMsg = (msg) => {
     peer.send(msg);

@@ -12,14 +12,15 @@
     "axios": "^0.21.1",
     "dotenv": "^10.0.0",
     "moment": "^2.29.1",
-    "sass": "^1.58.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.1",
+    "sass": "^1.58.0",
     "shortid": "^2.2.16",
     "simple-peer": "^9.9.3",
     "socket.io-client": "^3.1.1",
+    "tone": "^14.7.77",
     "web-vitals": "^0.2.4"
   },
   "scripts": {
