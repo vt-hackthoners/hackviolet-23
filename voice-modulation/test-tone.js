@@ -28,6 +28,10 @@ mic.open().then(() => {
 
     $upButton.onclick = () => pitchShift.pitch += 1;
     $downButton.onclick = () => pitchShift.pitch -= 1;
+
+    let stream = pitchShift.context.createMediaStreamDestination();
+
+    console.log(stream)
 }).catch(e => {
     // promise is rejected when the user doesn't have or allow mic access
     console.log("mic not open");
