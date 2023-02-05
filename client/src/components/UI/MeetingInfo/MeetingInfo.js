@@ -42,7 +42,7 @@ const MeetingInfo = ({ setMeetInfoPopup, url }) => {
           can join.
         </p>
       </div>
-      <p className="small-text">Joined as parth.ranawat@gmail.com</p>
+      <p className="small-text">Joined as akshay@gmail.com</p>
     </div>
   );
 };
