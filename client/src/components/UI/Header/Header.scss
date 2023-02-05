@@ -7,14 +7,42 @@
   .logo {
     display: flex;
     align-items: center;
-    width: 124px;
     img {
       width: 100%;
     }
-    .help-text {
-      font-size: 22px;
-      padding-left: 4px;
-      color: #5f6368;
+    .help {
+      display: flex;
+      width: 80px;
+      height: 80px;
+
+      justify-content: center;
+      align-items: center;
+      margin: 0px 5px;
+      margin-top: 30px;
+
+      .help-text {
+        font-size: 60px;
+        font-weight: 700;
+        padding-left: 4px;
+        color: rgba(174, 172, 236, 0.5);
+        -webkit-text-stroke: 3px white;
+      }
+    }
+    .W {
+      background-color: #aeacec;
+      margin-left: 80px;
+    }
+    .O {
+      background-color: #8784e3;
+    }
+    .I {
+      background-color: #44409e;
+    }
+    .C {
+      background-color: #8784e3;
+    }
+    .E {
+      background-color: #aeacec;
     }
   }
   .action-btn {

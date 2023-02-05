@@ -10,8 +10,21 @@ const Header = () => {
   return (
     <div className="header">
       <div className="logo">
-        <img src="https://www.gstatic.com/meet/google_meet_horizontal_wordmark_2020q4_2x_icon_124_40_292e71bcb52a56e2a9005164118f183b.png" />
-        <span className="help-text">Meet</span>
+        <div className="help W">
+          <span className="help-text">W</span>
+        </div>
+        <div className="help O">
+          <span className="help-text">O</span>
+        </div>
+        <div className="help I">
+          <span className="help-text">I</span>
+        </div>
+        <div className="help C">
+          <span className="help-text">C</span>
+        </div>
+        <div className="help E">
+          <span className="help-text">E</span>
+        </div>
       </div>
       <div className="action-btn">
         <FontAwesomeIcon className="icon-block" icon={faQuestionCircle} />

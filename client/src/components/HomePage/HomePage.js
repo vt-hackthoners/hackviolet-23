@@ -4,6 +4,7 @@ import { faVideo, faKeyboard } from "@fortawesome/free-solid-svg-icons";
 import shortid from "shortid";
 import "./HomePage.scss";
 import Header from "../UI/Header/Header";
+import banner from "../../../src/Group-video-amico.png";
 
 const HomePage = () => {
   const history = useHistory();
@@ -19,11 +20,8 @@ const HomePage = () => {
       <div className="body">
         <div className="left-side">
           <div className="content">
-            <h2>Premium video meetings. Now free for everyone.</h2>
-            <p>
-              We re-engineered the service we built for secure business
-              meetings, Google Meet, to make it free and available for all.
-            </p>
+            <h2>Where Skills Trump Bias</h2>
+            <p>We re-engineered the service to make it more Just.</p>
             <div className="action-btn">
               <button className="btn green" onClick={startCall}>
                 <FontAwesomeIcon className="icon-block" icon={faVideo} />
@@ -39,12 +37,13 @@ const HomePage = () => {
             </div>
           </div>
           <div className="help-text">
-            <a href="">Learn more</a> about Google Meet
+            <a href="">Learn more</a> about Woice, a bias free interviewing
+            platform.
           </div>
         </div>
         <div className="right-side">
           <div className="content">
-            <img src="https://www.gstatic.com/meet/google_meet_marketing_ongoing_meeting_grid_427cbb32d746b1d0133b898b50115e96.jpg" />
+            <img src={banner} alt="banner image" />
           </div>
         </div>
       </div>

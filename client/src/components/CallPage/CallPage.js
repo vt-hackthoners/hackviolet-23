@@ -59,121 +59,160 @@ const CallPage = () => {
       peer.signal(response.code);
     }
   };
-  let initWebRTC;
-  try {
-    initWebRTC = () => {
-      navigator.mediaDevices
-        .getUserMedia({
-          video: true,
-          // audio: true,
-        })
-        .then((stream) => {
-          setStreamObj(stream);
-          console.log("Got MediaStream:", stream);
 
-          const mic = new Tone.UserMedia();
-          mic
-            .open()
-            .then(() => {
-              // promise resolves when input is available
-              console.log("mic open");
-              // print the incoming mic levels in decibels
-              // setInterval(() => console.log(meter.getValue()), 100);
+  let initWebRTC = () => {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: true,
+        audio: true,
+      })
+      .then((stream) => {
+        setStreamObj(stream);
+        console.log("Got MediaStream:", stream);
+        console.log("stream audio", stream.getAudioTracks());
 
-              const pitchShift = new Tone.PitchShift();
+        const mic = new Tone.UserMedia();
+        mic
+          .open()
+          .then(() => {
+            // promise resolves when input is available
+            console.log("mic open");
+            // print the incoming mic levels in decibels
+            // setInterval(() => console.log(meter.getValue()), 100);
 
-              mic.connect(pitchShift);
-              pitchShift.toDestination();
-              pitchShift.pitch -= 3;
+            const pitchShift = new Tone.PitchShift();
 
-              let dest = pitchShift.context.createMediaStreamDestination();
-              let micstream = dest.stream;
+            mic.connect(pitchShift);
+            pitchShift.toDestination();
+            pitchShift.pitch -= 4;
 
-              let audioTrack = micstream.getAudioTracks()[0];
-              stream.addTrack(audioTrack);
+            let dest = pitchShift.context.createMediaStreamDestination();
+            let micstream = dest.stream;
 
-              console.log(stream);
-            })
-            .catch((e) => {
-              // promise is rejected when the user doesn't have or allow mic access
-              console.log("mic not open");
+            let audioTrack = micstream.getAudioTracks()[0];
+            console.log("audio array", micstream.getAudioTracks());
+            console.log("audio track", audioTrack);
+            // stream.addTrack(audioTrack);
+
+            console.log("stream after adding", stream);
+            console.log("new stream audio", stream.getAudioTracks());
+
+            peer = new Peer({
+              initiator: isAdmin,
+              trickle: false,
+              stream: stream,
             });
 
-          peer = new Peer({
-            initiator: isAdmin,
-            trickle: false,
-            stream: stream,
-          });
-
-          if (!isAdmin) {
-            getRecieverCode();
-          }
-
-          peer.on("signal", async (data) => {
-            if (isAdmin) {
-              let payload = {
-                id,
-                signalData: data,
-              };
-              await postRequest(`${BASE_URL}${SAVE_CALL_ID}`, payload);
-            } else {
-              socket.emit("code", { code: data, url }, (cbData) => {
-                console.log("code sent");
-              });
+            if (!isAdmin) {
+              getRecieverCode();
             }
-          });
 
-          peer.on("connect", () => {
-            // wait for 'connect' event before using the data channel
-          });
-
-          peer.on("data", (data) => {
-            clearTimeout(alertTimeout);
-            messageListReducer({
-              type: "addMessage",
-              payload: {
-                user: "other",
-                msg: data.toString(),
-                time: Date.now(),
-              },
+            peer.on("signal", async (data) => {
+              if (isAdmin) {
+                let payload = {
+                  id,
+                  signalData: data,
+                };
+                await postRequest(`${BASE_URL}${SAVE_CALL_ID}`, payload);
+              } else {
+                socket.emit("code", { code: data, url }, (cbData) => {
+                  console.log("code sent");
+                });
+              }
             });
 
-            setMessageAlert({
-              alert: true,
-              isPopup: true,
-              payload: {
-                user: "other",
-                msg: data.toString(),
-              },
+            peer.on("connect", () => {
+              // wait for 'connect' event before using the data channel
             });
 
-            alertTimeout = setTimeout(() => {
+            peer.on("data", (data) => {
+              clearTimeout(alertTimeout);
+              messageListReducer({
+                type: "addMessage",
+                payload: {
+                  user: "other",
+                  msg: data.toString(),
+                  time: Date.now(),
+                },
+              });
+
               setMessageAlert({
-                ...messageAlert,
-                isPopup: false,
-                payload: {},
+                alert: true,
+                isPopup: true,
+                payload: {
+                  user: "other",
+                  msg: data.toString(),
+                },
               });
-            }, 10000);
+
+              alertTimeout = setTimeout(() => {
+                setMessageAlert({
+                  ...messageAlert,
+                  isPopup: false,
+                  payload: {},
+                });
+              }, 10000);
+            });
+
+            peer.on("stream", (stream) => {
+              // got remote video stream, now let's show it in a video tag
+              console.log("peer side audio", stream.getAudioTracks());
+
+              let video = document.querySelector("video");
+
+              if ("srcObject" in video) {
+                video.srcObject = stream;
+              } else {
+                video.src = window.URL.createObjectURL(stream); // for older browsers
+              }
+              // video.play();
+
+              video.onloadedmetadata = (e) => {
+                video.play();
+                video.muted = true;
+              };
+
+              // const audioCtx = new AudioContext();
+              // const source = audioCtx.createMediaStreamSource(stream);
+
+              // Create a biquadfilter
+              // const biquadFilter = audioCtx.createBiquadFilter();
+              // biquadFilter.type = "lowshelf";
+              // biquadFilter.frequency.value = 1000;
+              // biquadFilter.gain.value = range.value;
+
+              // connect the AudioBufferSourceNode to the gainNode
+              // and the gainNode to the destination, so we can play the
+              // music and adjust the volume using the mouse cursor
+              // source.connect(biquadFilter);
+              // const pitchShift = new Tone.PitchShift();
+
+              // source.connect(pitchShift);
+              // pitchShift.toDestination();
+              // pitchShift.pitch -= 1;
+
+              // let dest = pitchShift.context.createMediaStreamDestination();
+              // let micstream = dest.stream;
+
+              // let audioTrack = micstream.getAudioTracks()[0];
+
+              // pitchShift.connect(audioCtx.destination);
+
+              // Get new mouse pointer coordinates when mouse is moved
+              // then set new gain value
+
+              // range.oninput = () => {
+              //   biquadFilter.gain.value = range.value;
+              // };
+            });
+          })
+          .catch((e) => {
+            // promise is rejected when the user doesn't have or allow mic access
+            console.log("mic not open");
           });
-
-          peer.on("stream", (stream) => {
-            // got remote video stream, now let's show it in a video tag
-            let video = document.querySelector("video");
-
-            if ("srcObject" in video) {
-              video.srcObject = stream;
-            } else {
-              video.src = window.URL.createObjectURL(stream); // for older browsers
-            }
-
-            video.play();
-          });
-        })
-        .catch(() => {});
-    };
-  } catch (err) {
-    console.log(err);
-  }
+      })
+      .catch(() => {});
+  };
 
   const sendMsg = (msg) => {
     peer.send(msg);
@@ -234,6 +273,7 @@ const CallPage = () => {
   return (
     <div className="callpage-container">
       <video className="video-container" src="" controls></video>
+      {/* <audio className="audio-container" src="" controls></audio> */}
 
       <CallPageHeader
         isMessenger={isMessenger}
